@@ -1,0 +1,117 @@
+#include <iostream>
+#include <cmath>
+#include <cstdlib>
+#include <ctime>
+#include <vector>
+#include <chrono>
+#include <bits/stdc++.h>
+
+// define function to be minimized
+double f(double x, double y) {
+    return pow(1.5 - x + x*y, 2) + pow(2.25 - x + x*y*y, 2) + pow(2.625 - x + x*y*y*y, 2);
+}
+
+// define RHC function
+void RHC(std::pair<double, double> sp, int p, double z, int seed) {
+    srand(seed); // seed random number generator
+    
+    int num_solutions = 0;
+    double best_x = sp.first; //set best x,y to sp value
+    double best_y = sp.second;
+    double new_x, new_y;
+    double best_f = f(best_x, best_y);
+    double smallest;
+    int flag = 0;
+
+    std::cout << "sp: (" << sp.first << ", " << sp.second << ")" << std::endl; //output sp value and original function value
+    std::cout << "f(x,y): " << best_f << std::endl;
+    
+    std::vector<std::pair<double, double>> neighbors(p); //vector of pairs to hold neighbors
+    std::vector<double> neighbor_fun; //vector to hold neighbor solutions
+  
+    while(true){  
+        for (int i = 0; i < p; i++) { //iterate p times
+            new_x = best_x + (double)rand()/(double)RAND_MAX * (2 * z) - z; //generate x,y vaules for neighbors 
+            new_y = best_y + (double)rand()/(double)RAND_MAX * (2 * z) - z;
+            //check if generated x,y values are -4.5<=x,y<=+4.5 of sp 
+            if(new_x < (sp.first - 4.5) || new_x > (sp.first + 4.5) || new_y < (sp.second - 4.5) || new_y > (sp.second + 4.5)){ 
+              flag = 1;
+              break;
+            }
+            neighbors[i].first = new_x; //store generated x,y values in neighbors vector
+            neighbors[i].second = new_y;
+            double neighbor_f = f(neighbors[i].first, neighbors[i].second); //calculate f solution of generated values
+            num_solutions++; //increment solution # counter
+            neighbor_fun.push_back(neighbor_f); //store calculated solution of generated values in neighbor_fun vector
+          }
+        if(flag == 1){  //if generated x,y values go past -4.5<=x,y<=+4.5 of sp, exit function
+          break;
+        }
+        smallest = *min_element(neighbor_fun.begin(), neighbor_fun.end()); //search for smallest function value in vector
+        int j = std::distance(std::begin(neighbor_fun), std::min_element(std::begin(neighbor_fun), std::end(neighbor_fun))); //find position of smallest function value in vector
+         
+        if (smallest < best_f) {  //if smallest function value out of p iterations is < best_f, make smallest new best_f
+            best_x = neighbors[j].first;  //set best_x and best_y to new best values
+            best_y = neighbors[j].second;
+            best_f = smallest;
+                
+        }
+        else {  //if there is no smaller function value after p iterations, exit function
+            break;
+        }
+      neighbors.clear();  //clear both vectors
+      neighbor_fun.clear();
+            
+    }
+    std::cout << "p: " << p << std::endl;  //output run information
+    std::cout << "z: " << z << std::endl;
+    std::cout << "seed: " << seed << std::endl;
+    std::cout << "Best solution: (" << best_x << ", " << best_y << ") with f(x,y) = " << best_f << std::endl;
+    std::cout << "Number of solutions generated: " << num_solutions << std::endl;
+}
+
+int main() {
+    std::pair<double,double> sp[]= {{2,2}, {1,4}, {-2,-3}, {1,-2}};  //store sp values as pairs in array
+    int p[]= {80, 500};    //store p and z values in arrays
+    double z[]= {.1, .02};
+  
+    std::pair<double,double> my_sp= {1,-1};  //sp, p, and z values for 33rd run
+    int my_p= 1000;
+    double my_z= .002;
+  
+    int seed = time(0); // use current time as seed for random number generator
+
+    for(int i = 0; i < 4; i++){      //loop for first 16 runs, 4 sp values
+      for(int j = 0; j < 2; j++){    //2 p values
+        for(int k = 0; k < 2; k++){  //2 z values
+          auto start = std::chrono::high_resolution_clock::now();  //timer for function run time
+          RHC(sp[i], p[j], z[k], seed);                            //call RHC function
+          auto stop = std::chrono::high_resolution_clock::now();
+          auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+          std::cout << "speed: " << duration.count() << std::endl << std::endl;  //output function run time
+        }
+      }
+    }
+   seed = 10; //set seed to 10 for next 16 runs
+
+    for(int i = 0; i < 4; i++){  //loop for next 16 runs
+      for(int j = 0; j < 2; j++){
+        for(int k = 0; k < 2; k++){
+          auto start = std::chrono::high_resolution_clock::now();
+          RHC(sp[i], p[j], z[k], seed);
+          auto stop = std::chrono::high_resolution_clock::now();
+          auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+          std::cout << "speed: " << duration.count() << std::endl << std::endl;
+        }
+      }
+    }
+
+    //my 33rd run
+    auto start = std::chrono::high_resolution_clock::now();
+    RHC(my_sp, my_p, my_z, seed);
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    std::cout << "speed: " << duration.count() << std::endl << std::endl;
+    
+    return 0;
+}
